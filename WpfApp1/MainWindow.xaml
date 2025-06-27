@@ -21,9 +21,12 @@
         <Canvas Name="MyCanvas" Grid.Column="1">
             <Grid MouseDown="GrabbingElement"
                   MouseMove="MovingElement"
-                  MouseUp="ReleasingElement">
-                <TextBlock Text="asdadasd" Panel.ZIndex="1"/>
-                <Ellipse Fill="Red"/>
+                  MouseUp="ReleasingElement"
+                  MouseRightButtonDown="Link">
+                <Border Background="Red" CornerRadius="12" Padding="10">
+                    <TextBlock Text="asdadasd" Panel.ZIndex="1" Foreground="White"/>
+
+                </Border>
             </Grid>
         </Canvas>
     </Grid>

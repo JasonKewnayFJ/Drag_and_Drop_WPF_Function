@@ -8,6 +8,7 @@ using System.Windows.Media; // Para colores, brochas, efectos visuales
 using System.Windows.Media.Imaging; // Para imágenes (no usamos ahora)
 using System.Windows.Navigation; // Navegación entre páginas (tampoco usamos)
 using System.Windows.Shapes; // Para usar cosas como Ellipse, Rectangle, etc.
+using System.IO;
 
 namespace WpfApp1
 {
@@ -17,9 +18,10 @@ namespace WpfApp1
     public partial class MainWindow : Window
     {
         private bool IsDragging = false; // Bandera pa' saber si estamos arrastrando algo
-        UIElement? DraggingElement = null; // El elemento que estamos moviendo ahora
+        UIElement? DraggingElement { get; set; } // El elemento que estamos moviendo ahora
+        UIElement? DraggedElement = null; // El elemente que estuvo movido anteriormente 
         private Point mouseOffset; // Diferencia entre el click y el borde del elemento
-
+        private readonly List<(UIElement a, UIElement b, Line connection)> Links = new(); //La lista pa'actualizar la linea durante el movimiento del elemento
         public MainWindow()
         {
             InitializeComponent(); // Carga el XAML, sin esto todo se va al carajo
@@ -37,11 +39,22 @@ namespace WpfApp1
         {
             if (!IsDragging) return; // Si no estamos arrastrando, pues no hacemos nada
 
-            var canvas = VisualTreeHelper.GetParent(sender as UIElement) as Canvas; // Buscamos el canvas (ojo, esto está medio frágil)
-            var position = e.GetPosition(canvas); // Posición actual del mouse en el canvas
+            //var canvas = MyCanvas; // Buscamos el canvas (ojo, esto está medio frágil)
+            var position = e.GetPosition(MyCanvas); // Posición actual del mouse en el canvas
 
-            var grid = sender as Grid; // Cast por si acaso, aunque no se usa después
-            var ellipse = grid?.Children.OfType<Ellipse>().FirstOrDefault(); // Pillamos el círculo si necesitamos hacerle algo (aquí no se hace nada)
+            foreach(var (a,b,line) in Links)
+            {
+                if (a == DraggingElement || b == DraggingElement)
+                {
+                    Point p1 = GetCenter(a);
+                    Point p2 = GetCenter(b);
+
+                    line.X1 = p1.X;
+                    line.X2 = p2.X;
+                    line.Y1 = p1.Y;
+                    line.Y2 = p2.Y; 
+                }
+            }
 
             // Movemos el objeto a donde está el mouse, pero ajustando con el offset
             Canvas.SetLeft(DraggingElement, position.X - mouseOffset.X);
@@ -53,9 +66,13 @@ namespace WpfApp1
             IsDragging = false; // Ya no estamos arrastrando
             if (DraggingElement != null)
             {
+                DraggedElement = DraggingElement; 
                 DraggingElement.ReleaseMouseCapture(); // Soltamos el control del mouse
             }
+
+
             DraggingElement = null; // Ya no hay ningún objeto agarrado
+            
         }
 
         private void CreateNewElement(object sender, RoutedEventArgs e)
@@ -71,12 +88,13 @@ namespace WpfApp1
         void AddDraggablePoint(string label, double x, double y)
         {
             var grid = new Grid(); // Contenedor para juntar el círculo y el texto
-            var ellipse = new Ellipse
+            var border = new Border
             {
                 MinHeight = 50,
                 MinWidth = 50,
-                Margin = new Thickness(20), // Espacio alrededor, pa’ que respire
-                Fill = Brushes.CadetBlue // Color medio turquesa
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(10), // Espacio alrededor, pa’ que respire
+                Background = Brushes.Red // Color medio turquesa
             };
 
             var text = new TextBlock
@@ -87,19 +105,79 @@ namespace WpfApp1
                 VerticalAlignment = VerticalAlignment.Center
             };
 
-            grid.Children.Add(ellipse); // Metemos el círculo en el grid
+            grid.Children.Add(border); // Metemos el círculo en el grid
             grid.Children.Add(text); // Metemos el texto arriba del círculo
 
             // Conectamos los eventos de mouse al grid entero
             grid.MouseDown += GrabbingElement;
             grid.MouseMove += MovingElement;
             grid.MouseUp += ReleasingElement;
+            grid.MouseRightButtonDown += Link;
+
 
             // Posicionamos el grid dentro del canvas
             Canvas.SetLeft(grid, x);
             Canvas.SetTop(grid, y);
 
             MyCanvas.Children.Add(grid); // Y por fin lo agregamos al canvas
+        }
+
+        private void Link(object sender, MouseButtonEventArgs e)
+        {
+            if (DraggingElement == (UIElement)sender)
+            {
+                MessageBox.Show("Нельзя связать элемент с самим собой");
+                DraggingElement = null;
+                return;
+            }
+            if (DraggingElement == null) DraggingElement = (UIElement)sender;
+            else
+            {
+                DraggedElement = (UIElement)sender;
+            }
+          
+
+            if (DraggingElement != null && DraggedElement != null)
+            {
+                LinkFromTo(DraggingElement, DraggedElement);
+                DraggedElement = null;
+                DraggingElement = null;
+            }
+
+
+        }
+
+        private void LinkFromTo(UIElement firstElement, UIElement secondElement)
+        {
+            Point start = GetCenter(firstElement);
+            Point end = GetCenter(secondElement);
+
+            var line = new Line
+            {
+                X1 = start.X,
+                Y1 = start.Y,
+                X2 = end.X,
+                Y2 = end.Y,
+
+                Stroke = Brushes.Black,
+                StrokeThickness = 2,
+                IsHitTestVisible = false
+            };
+
+            MyCanvas.Children.Add(line);
+            Links.Add((firstElement, secondElement, line));
+        }
+
+        Point GetCenter(UIElement element)
+        {
+            double x = Canvas.GetLeft(element);
+            double y = Canvas.GetTop(element);
+            if (element is FrameworkElement fe)
+            {
+                y += fe.ActualHeight / 2;
+                x += fe.ActualWidth / 2;
+            }
+            return new Point(x, y);
         }
     }
 }
