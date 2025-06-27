@@ -152,6 +152,8 @@ namespace WpfApp1
             Point start = GetCenter(firstElement);
             Point end = GetCenter(secondElement);
 
+            
+
             var line = new Line
             {
                 X1 = start.X,
@@ -163,6 +165,7 @@ namespace WpfApp1
                 StrokeThickness = 2,
                 IsHitTestVisible = false
             };
+
 
             MyCanvas.Children.Add(line);
             Links.Add((firstElement, secondElement, line));
