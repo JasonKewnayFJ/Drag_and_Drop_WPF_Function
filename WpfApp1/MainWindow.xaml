@@ -7,7 +7,18 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Canvas Name="MyCanvas">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel>
+            <TextBox x:Name="TitleBox"/>
+            <Button Content="assad" Click="CreateNewElement"/>
+        </StackPanel>
+        
+        <Canvas Name="MyCanvas" Grid.Column="1">
             <Grid MouseDown="GrabbingElement"
                   MouseMove="MovingElement"
                   MouseUp="ReleasingElement">
