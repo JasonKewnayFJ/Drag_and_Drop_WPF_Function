@@ -9,6 +9,9 @@ using System.Windows.Media.Imaging; // Para imágenes (no usamos ahora)
 using System.Windows.Navigation; // Navegación entre páginas (tampoco usamos)
 using System.Windows.Shapes; // Para usar cosas como Ellipse, Rectangle, etc.
 using System.IO;
+using WpfApp1.Templates;
+using WpfApp1.Creators;
+using WpfApp1.Entities;
 
 namespace WpfApp1
 {
@@ -17,14 +20,24 @@ namespace WpfApp1
     /// </summary>
     public partial class MainWindow : Window
     {
+        
         private bool IsDragging = false; // Bandera pa' saber si estamos arrastrando algo
         UIElement? DraggingElement { get; set; } // El elemento que estamos moviendo ahora
         UIElement? DraggedElement = null; // El elemente que estuvo movido anteriormente 
         private Point mouseOffset; // Diferencia entre el click y el borde del elemento
         private readonly List<(UIElement a, UIElement b, Line connection)> Links = new(); //La lista pa'actualizar la linea durante el movimiento del elemento
+        private readonly MainWindowViewModel MWVM = new MainWindowViewModel();
         public MainWindow()
         {
             InitializeComponent(); // Carga el XAML, sin esto todo se va al carajo
+            if (MWVM == null)
+            {
+                MessageBox.Show("Хуйню творишь, он же у тебя нулл");
+            }
+            else
+            {
+                this.DataContext = MWVM;
+            }
         }
 
         private void GrabbingElement(object sender, MouseButtonEventArgs e)
@@ -77,36 +90,41 @@ namespace WpfApp1
 
         private void CreateNewElement(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(TitleBox.Text)) return; // Si no hay texto, no hacemos ni mierda
+            //if (string.IsNullOrEmpty(TitleBox.Text)) return; // Si no hay texto, no hacemos ni mierda
 
-            string Title = TitleBox.Text; // Guardamos el texto
-            TitleBox.Text = string.Empty; // Limpiamos el textbox
+            //string Title = TitleBox.Text; // Guardamos el texto
+            //TitleBox.Text = string.Empty; // Limpiamos el textbox
 
-            AddDraggablePoint(Title, 400, 400); // Creamos el punto en (400, 400) con ese texto
+            var creator = new MakettoCreator();
+            creator.ShowDialog();
+            //AddDraggablePoint(Title, 400, 400); // Creamos el punto en (400, 400) con ese texto
         }
 
+
+        public void AddToCanvas (MakettoEntity ME)
+        {
+            AddDraggablePoint(ME.Title, 400, 400);
+        }
         void AddDraggablePoint(string label, double x, double y)
         {
             var grid = new Grid(); // Contenedor para juntar el círculo y el texto
-            var border = new Border
+            var border = new Maketto
             {
                 MinHeight = 50,
                 MinWidth = 50,
-                CornerRadius = new CornerRadius(12),
                 Padding = new Thickness(10), // Espacio alrededor, pa’ que respire
                 Background = Brushes.Red // Color medio turquesa
             };
 
-            var text = new TextBlock
-            {
-                Text = label, // El texto que va en el círculo
-                Foreground = Brushes.White, // Letra blanca pa’ que se vea
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
+            //var text = new TextBlock
+            //{
+            //    Text = label, // El texto que va en el círculo
+            //    Foreground = Brushes.White, // Letra blanca pa’ que se vea
+            //    HorizontalAlignment = HorizontalAlignment.Center,
+            //    VerticalAlignment = VerticalAlignment.Center
+            //};
 
             grid.Children.Add(border); // Metemos el círculo en el grid
-            grid.Children.Add(text); // Metemos el texto arriba del círculo
 
             // Conectamos los eventos de mouse al grid entero
             grid.MouseDown += GrabbingElement;
